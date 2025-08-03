@@ -65,6 +65,7 @@ class SuiviClientPro(QMainWindow):
 
         self.btn_param.clicked.connect(self.open_config)
         self.btn_actualiser.clicked.connect(self.refresh_data)
+        self.btn_reset_sort.clicked.connect(self.reset_sort)
 
         self.search_input = QLineEdit()
         self.search_input.setPlaceholderText("🔍 Rechercher par nom...")
