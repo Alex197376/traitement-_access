@@ -101,10 +101,12 @@ class SuiviClientPro(QMainWindow):
         menu_widget.setLayout(left_layout)
 
         self.table = QTableWidget()
-        self.table.setColumnCount(7)
+        
+        self.table.setColumnCount(9)
         self.table.setHorizontalHeaderLabels([
-            "Nom du dossier", "Type de mission", "Date & Heure", "Statut paiement",
-            "Assainissement", "Dossier", "Commentaires"])
+            "Nom du client", "Type de mission", "Date & Heure", "Paiement",
+            "Assainissement", "Dossier", "Commentaires", "Photo", "DDT envoyé"
+        ])
         self.table.setSortingEnabled(True)
         self.table.horizontalHeader().sectionClicked.connect(self.handle_sorting)
 
@@ -349,6 +351,11 @@ class SuiviClientPro(QMainWindow):
             self.table.setItem(row, 4, QTableWidgetItem(assainissement))
             self.table.setItem(row, 5, QTableWidgetItem(dossier_statut))
             self.table.setItem(row, 6, QTableWidgetItem(commentaire))
+            # Colonne DDT envoyé
+            ddt_envoye = dossier.get("ddt_envoye", False)
+            item_ddt = QTableWidgetItem("✅" if ddt_envoye else "❌")
+            item_ddt.setTextAlignment(Qt.AlignCenter)
+            self.table.setItem(row_idx, 8, item_ddt)  # colonne index 8 = 9e colonne
 
     def save_manual_states(self, item):
         row = item.row()

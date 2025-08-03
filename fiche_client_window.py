@@ -135,6 +135,7 @@ class SuiviClientPro(QMainWindow):
 
         self.btn_param.clicked.connect(self.open_config)
         self.btn_actualiser.clicked.connect(self.refresh_data)
+        
 
         self.search_input = QLineEdit()
         self.search_input.setPlaceholderText("🔍 Rechercher par nom...")
@@ -169,10 +170,12 @@ class SuiviClientPro(QMainWindow):
         menu_widget.setLayout(left_layout)
 
         self.table = QTableWidget()
-        self.table.setColumnCount(7)
+        self.table.setColumnCount(9)
         self.table.setHorizontalHeaderLabels([
-            "Nom du dossier", "Type de mission", "Date & Heure", "Statut paiement",
-            "Assainissement", "Dossier", "Commentaires"])
+            "Nom du client", "Type de mission", "Date & Heure", "Paiement",
+            "Assainissement", "Dossier", "Commentaires", "Photo", "DDT envoyé"
+        ])
+
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         self.table.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.table.setEditTriggers(QTableWidget.AllEditTriggers)
