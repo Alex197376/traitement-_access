@@ -101,7 +101,7 @@ class ConfigWindow(QDialog):
             try:
                 with pyodbc.connect(conn_str) as conn:
                     cursor = conn.cursor()
-                    cursor.execute("SELECT nom_dossier FROM Dossiers")
+                    cursor.execute("SELECT Num_dossier FROM Donnees_Dossiers")
                     access_names = [normalize_folder_name(row[0]) for row in cursor.fetchall()]
             except Exception as e:
                 return f"Erreur lecture base Access : {e}"
@@ -167,7 +167,7 @@ def load_clients_for_main_table():
         conn_str = f"DRIVER={{Microsoft Access Driver (*.mdb, *.accdb)}};DBQ={access_path};"
         with pyodbc.connect(conn_str) as conn:
             cursor = conn.cursor()
-            cursor.execute("SELECT nom_dossier, type_mission, date_rdv, statut_paiement FROM Dossiers")
+            cursor.execute("SELECT Num_dossier, type_de_dossier, rdv_date, dossier_etat_paie FROM Donnees_Dossiers")
             rows = cursor.fetchall()
 
         result = []

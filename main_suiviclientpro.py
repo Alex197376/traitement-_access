@@ -251,11 +251,14 @@ class SuiviClientPro(QMainWindow):
             cursor = conn.cursor()
 
             # Requête pour récupérer toutes les données du dossier
-            cursor.execute("""
+            cursor.execute(
+                """
                 SELECT *
-                FROM Dossiers
-                WHERE nom_dossier = ?
-            """, (nom_dossier,))
+                FROM Donnees_Dossiers
+                WHERE Num_dossier = ?
+                """,
+                (nom_dossier,),
+            )
 
             row = cursor.fetchone()
             if not row:
@@ -263,30 +266,35 @@ class SuiviClientPro(QMainWindow):
                 return {}
 
             # Construction du dictionnaire de données
+            date_part = getattr(row, "rdv_date", None)
+            heure_part = getattr(row, "rdv_heure", "")
+            date_str = date_part.strftime("%d/%m/%Y") if isinstance(date_part, datetime) else ""
+            date_heure = f"{date_str} {heure_part}".strip()
+
             dossier_data = {
-                "nom_du_dossier": row.nom_dossier,
-                "type_de_mission": row.type_mission,
-                "date_&_heure": row.date_rdv.strftime("%d/%m/%Y %H h %M") if row.date_rdv else "",
-                "statut_paiement": row.statut_paiement or "",
-                "assainissement": row.assainissement or "",
-                "dossier": row.statut_dossier or "",
-                "commentaires": row.commentaires or "",
-                "montant_ttc": f"{row.facturation_ttc:.2f} €" if row.facturation_ttc else "",
-                "montant_paye": f"{row.facturation_paye:.2f} €" if row.facturation_paye else "",
-                "reste_a_payer": f"{row.facturation_restante:.2f} €" if row.facturation_restante else "",
-                "client_nom": row.client_nom or "",
-                "client_prenom": row.client_prenom or "",
-                "client_adresse": row.client_adresse or "",
-                "client_cp": row.client_cp or "",
-                "client_ville": row.client_ville or "",
-                "client_email": row.client_email or "",
-                "client_tel": row.client_tel or "",
-                "bien_adresse": row.bien_adresse or "",
-                "bien_cp": row.bien_cp or "",
-                "bien_ville": row.bien_ville or "",
-                "donneur_ordre": row.donneur_ordre or "",
-                "chemin": row.chemin_dossier or "",
-                "photo": "",  # à compléter dans une étape suivante
+                "nom_du_dossier": getattr(row, "Num_dossier", ""),
+                "type_de_mission": getattr(row, "type_de_dossier", ""),
+                "date_&_heure": date_heure,
+                "statut_paiement": getattr(row, "dossier_etat_paie", ""),
+                "assainissement": getattr(row, "assainissement", ""),
+                "dossier": getattr(row, "statut_dossier", ""),
+                "commentaires": getattr(row, "commentaires", ""),
+                "montant_ttc": f"{getattr(row, 'facturation_ttc', 0):.2f} €" if getattr(row, 'facturation_ttc', None) else "",
+                "montant_paye": f"{getattr(row, 'facturation_paye', 0):.2f} €" if getattr(row, 'facturation_paye', None) else "",
+                "reste_a_payer": f"{getattr(row, 'facturation_restante', 0):.2f} €" if getattr(row, 'facturation_restante', None) else "",
+                "client_nom": getattr(row, "client_nom", ""),
+                "client_prenom": getattr(row, "client_prenom", ""),
+                "client_adresse": getattr(row, "client_adresse", ""),
+                "client_cp": getattr(row, "client_cp", ""),
+                "client_ville": getattr(row, "client_ville", ""),
+                "client_email": getattr(row, "client_email", ""),
+                "client_tel": getattr(row, "client_tel", ""),
+                "bien_adresse": getattr(row, "bien_adresse", ""),
+                "bien_cp": getattr(row, "bien_cp", ""),
+                "bien_ville": getattr(row, "bien_ville", ""),
+                "donneur_ordre": getattr(row, "donneur_ordre", ""),
+                "chemin": getattr(row, "chemin_dossier", ""),
+                "photo": "",
             }
 
             conn.close()
@@ -333,6 +341,7 @@ class SuiviClientPro(QMainWindow):
                 reverse=self.sort_order == Qt.DescendingOrder
             )
 
+        self.table.blockSignals(True)
         self.table.setRowCount(len(self.filtered_dossiers))
 
         for row, dossier in enumerate(self.filtered_dossiers):
@@ -348,6 +357,7 @@ class SuiviClientPro(QMainWindow):
             self.table.setItem(row, 4, QTableWidgetItem(assainissement))
             self.table.setItem(row, 5, QTableWidgetItem(dossier_statut))
             self.table.setItem(row, 6, QTableWidgetItem(commentaire))
+        self.table.blockSignals(False)
 
     def save_manual_states(self, item):
         row = item.row()
@@ -382,9 +392,9 @@ class SuiviClientPro(QMainWindow):
                     cursor = conn.cursor()
                     cursor.execute(
                         """
-                        UPDATE Dossiers
+                        UPDATE Donnees_Dossiers
                         SET assainissement = ?, statut_dossier = ?, commentaires = ?
-                        WHERE nom_dossier = ?
+                        WHERE Num_dossier = ?
                         """,
                         (
                             self.manual_states[dossier].get("assainissement", ""),
