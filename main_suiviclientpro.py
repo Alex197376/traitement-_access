@@ -13,17 +13,6 @@ from PyQt5.QtGui import QIcon
 from PyQt5.QtCore import Qt
 from config_window import ConfigWindow
 
-
-
-CONFIG_PATH = "config_suiviclientpro.json"
-MANUAL_STATES_PATH = "manual_states.json"
-
-def load_config():
-    if os.path.exists(CONFIG_PATH):
-        with open(CONFIG_PATH, "r", encoding="utf-8") as f:
-            return json.load(f)
-    return {}
-
 def validate_json_file(path):
     try:
         with open(path, 'r', encoding='utf-8') as f:
