@@ -229,7 +229,6 @@ class SuiviClientPro(QMainWindow):
             dossier_data = self.get_dossier_data_from_row(row)
             print("Contenu du dossier sélectionné :", dossier_data)  # Déplacer ici
             if dossier_data:
-                from fiche_client_window import FicheClientWindow
                 fiche = FicheClientWindow(dossier_data, self)
                 fiche.exec_()
 
@@ -253,7 +252,7 @@ class SuiviClientPro(QMainWindow):
             # Requête pour récupérer toutes les données du dossier
             cursor.execute("""
                 SELECT *
-                FROM Dossiers
+                FROM Donnees_Dossiers
                 WHERE nom_dossier = ?
             """, (nom_dossier,))
 
