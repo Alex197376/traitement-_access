@@ -65,6 +65,7 @@ class SuiviClientPro(QMainWindow):
 
         self.btn_param.clicked.connect(self.open_config)
         self.btn_actualiser.clicked.connect(self.refresh_data)
+        self.btn_reset_sort.clicked.connect(self.reset_sort)
 
         self.search_input = QLineEdit()
         self.search_input.setPlaceholderText("🔍 Rechercher par nom...")
@@ -100,10 +101,12 @@ class SuiviClientPro(QMainWindow):
         menu_widget.setLayout(left_layout)
 
         self.table = QTableWidget()
-        self.table.setColumnCount(7)
+        
+        self.table.setColumnCount(9)
         self.table.setHorizontalHeaderLabels([
-            "Nom du dossier", "Type de mission", "Date & Heure", "Statut paiement",
-            "Assainissement", "Dossier", "Commentaires"])
+            "Nom du client", "Type de mission", "Date & Heure", "Paiement",
+            "Assainissement", "Dossier", "Commentaires", "Photo", "DDT envoyé"
+        ])
         self.table.setSortingEnabled(True)
         self.table.horizontalHeader().sectionClicked.connect(self.handle_sorting)
 
@@ -327,29 +330,33 @@ class SuiviClientPro(QMainWindow):
 
     def update_table(self):
 
-        if self.sorted_column >= 0:
-            self.filtered_dossiers.sort(
-                key=lambda x: list(x.values())[self.sorted_column],
-                reverse=self.sort_order == Qt.DescendingOrder
-            )
+        self.table.blockSignals(True)
+        try:
+            if self.sorted_column >= 0:
+                self.filtered_dossiers.sort(
+                    key=lambda x: list(x.values())[self.sorted_column],
+                    reverse=self.sort_order == Qt.DescendingOrder
+                )
 
-        self.table.setRowCount(len(self.filtered_dossiers))
+            self.table.setRowCount(len(self.filtered_dossiers))
 
-        for row, dossier in enumerate(self.filtered_dossiers):
-            self.table.setItem(row, 0, QTableWidgetItem(dossier["nom"]))
-            self.table.setItem(row, 1, QTableWidgetItem(dossier["type"]))
-            self.table.setItem(row, 2, QTableWidgetItem(dossier["date"]))
-            self.table.setItem(row, 3, QTableWidgetItem(dossier["paiement"]))
+            for row, dossier in enumerate(self.filtered_dossiers):
+                self.table.setItem(row, 0, QTableWidgetItem(dossier["nom"]))
+                self.table.setItem(row, 1, QTableWidgetItem(dossier["type"]))
+                self.table.setItem(row, 2, QTableWidgetItem(dossier["date"]))
+                self.table.setItem(row, 3, QTableWidgetItem(dossier["paiement"]))
 
-            assainissement = self.manual_states.get(dossier["nom"], {}).get("assainissement", "")
-            dossier_statut = self.manual_states.get(dossier["nom"], {}).get("dossier", "")
-            commentaire = self.manual_states.get(dossier["nom"], {}).get("commentaire", "")
+                assainissement = self.manual_states.get(dossier["nom"], {}).get("assainissement", "")
+                dossier_statut = self.manual_states.get(dossier["nom"], {}).get("dossier", "")
+                commentaire = self.manual_states.get(dossier["nom"], {}).get("commentaire", "")
 
             self.table.setItem(row, 4, QTableWidgetItem(assainissement))
             self.table.setItem(row, 5, QTableWidgetItem(dossier_statut))
             self.table.setItem(row, 6, QTableWidgetItem(commentaire))
 
     def save_manual_states(self, item):
+        if self.table.signalsBlocked():
+            return
         row = item.row()
         col = item.column()
         if col >= 4:

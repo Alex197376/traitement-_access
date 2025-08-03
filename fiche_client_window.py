@@ -1,19 +1,10 @@
-import sys
 import os
-import json
-import pyodbc
-from datetime import datetime
 from PyQt5.QtWidgets import (
-    QApplication, QMainWindow, QWidget, QPushButton, QVBoxLayout,
-    QHBoxLayout, QLabel, QTableWidget, QTableWidgetItem,
-    QHeaderView, QAbstractItemView, QSplitter, QMessageBox, QLineEdit, QComboBox, QFileDialog, QDialog, QTextEdit, QTabWidget, QGroupBox, QFormLayout
+    QWidget, QPushButton, QVBoxLayout,
+    QLabel, QMessageBox, QDialog, QTabWidget, QGroupBox, QFormLayout
 )
-from PyQt5.QtGui import QIcon, QPixmap
+from PyQt5.QtGui import QPixmap
 from PyQt5.QtCore import Qt
-from config_window import ConfigWindow
-
-CONFIG_PATH = "config_suiviclientpro.json"
-MANUAL_STATES_PATH = "manual_states.json"
 
 class FicheClientWindow(QDialog):
     def __init__(self, dossier_data, parent=None):
