@@ -184,8 +184,11 @@ class SuiviClientPro(QMainWindow):
             with pyodbc.connect(conn_str) as conn:
                 cursor = conn.cursor()
                 cursor.execute("""
-                    SELECT Num_dossier, type_de_dossier, rdv_date, rdv_heure, dossier_etat_paie, photo_de_presentation, dossier_Acces
-                    FROM Donnees_Dossiers
+                    SELECT d.Num_dossier, d.type_de_dossier, d.rdv_date, d.rdv_heure,
+                           d.dossier_etat_paie, d.photo_de_presentation, d.dossier_Acces,
+                           i.nom_client, i.prenom_client, i.adresse_client, i.code_postal, i.ville
+                    FROM Donnees_Dossiers AS d
+                    LEFT JOIN [Informations Générales] AS i ON d.Num_dossier = i.Num_dossier
                 """)
 
                 for row in cursor.fetchall():
@@ -214,7 +217,12 @@ class SuiviClientPro(QMainWindow):
                             "date": date_heure,
                             "paiement": str(row.dossier_etat_paie or ""),
                             "photo": str(row.photo_de_presentation or ""),
-                            "chemin": str(row.dossier_Acces or "")
+                            "chemin": str(row.dossier_Acces or ""),
+                            "client_nom": str(getattr(row, 'nom_client', '') or ""),
+                            "client_prenom": str(getattr(row, 'prenom_client', '') or ""),
+                            "client_adresse": str(getattr(row, 'adresse_client', '') or ""),
+                            "client_cp": str(getattr(row, 'code_postal', '') or ""),
+                            "client_ville": str(getattr(row, 'ville', '') or "")
                         })
                     except Exception as e:
                         print(f"[Erreur ligne] {row}: {e}")
