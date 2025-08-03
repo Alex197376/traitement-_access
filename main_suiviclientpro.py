@@ -229,12 +229,11 @@ class SuiviClientPro(QMainWindow):
             dossier_data = self.get_dossier_data_from_row(row)
             print("Contenu du dossier sélectionné :", dossier_data)  # Déplacer ici
             if dossier_data:
-                from fiche_client_window import FicheClientWindow
                 fiche = FicheClientWindow(dossier_data, self)
                 fiche.exec_()
 
     def get_dossier_data_from_row(self, row):
-        nom_dossier = self.table.item(row, 0).text()
+        num_dossier = self.table.item(row, 0).text()
 
         config = self.load_config()
         chemin_base = config.get("access_path")
@@ -251,41 +250,68 @@ class SuiviClientPro(QMainWindow):
             cursor = conn.cursor()
 
             # Requête pour récupérer toutes les données du dossier
-            cursor.execute("""
+            cursor.execute(
+                """
                 SELECT *
-                FROM Dossiers
-                WHERE nom_dossier = ?
-            """, (nom_dossier,))
+                FROM Donnees_Dossiers
+                WHERE Num_dossier = ?
+                """,
+                (num_dossier,),
+            )
 
             row = cursor.fetchone()
             if not row:
-                QMessageBox.warning(self, "Introuvable", f"Aucun dossier trouvé dans la base Access pour {nom_dossier}")
+                QMessageBox.warning(
+                    self,
+                    "Introuvable",
+                    f"Aucun dossier trouvé dans la base Access pour {num_dossier}",
+                )
                 return {}
 
-            # Construction du dictionnaire de données
+            # Construction du dictionnaire de données en vérifiant la présence des colonnes
+            date_val = getattr(row, "rdv_date", None)
+            date_str = (
+                date_val.strftime("%d/%m/%Y")
+                if isinstance(date_val, datetime)
+                else str(date_val or "")
+            )
+            time_str = str(getattr(row, "rdv_heure", "") or "")
+
             dossier_data = {
-                "nom_du_dossier": row.nom_dossier,
-                "type_de_mission": row.type_mission,
-                "date_&_heure": row.date_rdv.strftime("%d/%m/%Y %H h %M") if row.date_rdv else "",
-                "statut_paiement": row.statut_paiement or "",
-                "assainissement": row.assainissement or "",
-                "dossier": row.statut_dossier or "",
-                "commentaires": row.commentaires or "",
-                "montant_ttc": f"{row.facturation_ttc:.2f} €" if row.facturation_ttc else "",
-                "montant_paye": f"{row.facturation_paye:.2f} €" if row.facturation_paye else "",
-                "reste_a_payer": f"{row.facturation_restante:.2f} €" if row.facturation_restante else "",
-                "client_nom": row.client_nom or "",
-                "client_prenom": row.client_prenom or "",
-                "client_adresse": row.client_adresse or "",
-                "client_cp": row.client_cp or "",
-                "client_ville": row.client_ville or "",
-                "client_email": row.client_email or "",
-                "client_tel": row.client_tel or "",
-                "bien_adresse": row.bien_adresse or "",
-                "bien_cp": row.bien_cp or "",
-                "bien_ville": row.bien_ville or "",
-                "donneur_ordre": row.donneur_ordre or "",
-                "chemin": row.chemin_dossier or "",
+                "nom_du_dossier": getattr(row, "Num_dossier", ""),
+                "type_de_mission": getattr(row, "type_de_dossier", ""),
+                "date_&_heure": f"{date_str} {time_str}".strip(),
+                "statut_paiement": getattr(row, "dossier_etat_paie", ""),
+                "assainissement": getattr(row, "assainissement", ""),
+                "dossier": getattr(row, "statut_dossier", ""),
+                "commentaires": getattr(row, "commentaires", ""),
+                "montant_ttc": (
+                    f"{getattr(row, 'facturation_ttc', 0):.2f} €"
+                    if getattr(row, "facturation_ttc", None)
+                    else ""
+                ),
+                "montant_paye": (
+                    f"{getattr(row, 'facturation_paye', 0):.2f} €"
+                    if getattr(row, "facturation_paye", None)
+                    else ""
+                ),
+                "reste_a_payer": (
+                    f"{getattr(row, 'facturation_restante', 0):.2f} €"
+                    if getattr(row, "facturation_restante", None)
+                    else ""
+                ),
+                "client_nom": getattr(row, "client_nom", ""),
+                "client_prenom": getattr(row, "client_prenom", ""),
+                "client_adresse": getattr(row, "client_adresse", ""),
+                "client_cp": getattr(row, "client_cp", ""),
+                "client_ville": getattr(row, "client_ville", ""),
+                "client_email": getattr(row, "client_email", ""),
+                "client_tel": getattr(row, "client_tel", ""),
+                "bien_adresse": getattr(row, "bien_adresse", ""),
+                "bien_cp": getattr(row, "bien_cp", ""),
+                "bien_ville": getattr(row, "bien_ville", ""),
+                "donneur_ordre": getattr(row, "donneur_ordre", ""),
+                "chemin": getattr(row, "dossier_Acces", ""),
                 "photo": "",  # à compléter dans une étape suivante
             }
 
