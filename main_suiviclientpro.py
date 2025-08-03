@@ -366,8 +366,40 @@ class SuiviClientPro(QMainWindow):
             with open(MANUAL_STATES_PATH, 'w', encoding='utf-8') as f:
                 json.dump(self.manual_states, f, indent=2, ensure_ascii=False)
 
+            # Mise à jour dans la base Access
+            config = self.load_config()
+            db_path = config.get("access_path", "")
+            if not os.path.exists(db_path):
+                QMessageBox.warning(self, "Erreur", f"Base Access introuvable : {db_path}")
+                return
 
-
+            conn_str = (
+                r"DRIVER={Microsoft Access Driver (*.mdb, *.accdb)};"
+                f"DBQ={db_path};"
+            )
+            try:
+                with pyodbc.connect(conn_str) as conn:
+                    cursor = conn.cursor()
+                    cursor.execute(
+                        """
+                        UPDATE Dossiers
+                        SET assainissement = ?, statut_dossier = ?, commentaires = ?
+                        WHERE nom_dossier = ?
+                        """,
+                        (
+                            self.manual_states[dossier].get("assainissement", ""),
+                            self.manual_states[dossier].get("dossier", ""),
+                            self.manual_states[dossier].get("commentaire", ""),
+                            dossier,
+                        ),
+                    )
+                    conn.commit()
+            except Exception as e:
+                QMessageBox.warning(
+                    self,
+                    "Erreur",
+                    f"Échec de l'écriture dans la base Access : {e}",
+                )
     def open_config(self):
         config_dialog = ConfigWindow(self)
         if config_dialog.exec_():
