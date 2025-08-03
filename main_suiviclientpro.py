@@ -2,6 +2,7 @@ import sys
 import os
 import json
 import pyodbc
+import logging
 from fiche_client_window import FicheClientWindow
 from datetime import datetime
 from PyQt5.QtWidgets import (
@@ -13,8 +14,7 @@ from PyQt5.QtGui import QIcon
 from PyQt5.QtCore import Qt
 from config_window import ConfigWindow
 
-
-
+logger = logging.getLogger(__name__)
 CONFIG_PATH = "config_suiviclientpro.json"
 MANUAL_STATES_PATH = "manual_states.json"
 
@@ -266,28 +266,37 @@ class SuiviClientPro(QMainWindow):
             dossier_data = {
                 "nom_du_dossier": row.nom_dossier,
                 "type_de_mission": row.type_mission,
-                "date_&_heure": row.date_rdv.strftime("%d/%m/%Y %H h %M") if row.date_rdv else "",
-                "statut_paiement": row.statut_paiement or "",
-                "assainissement": row.assainissement or "",
-                "dossier": row.statut_dossier or "",
-                "commentaires": row.commentaires or "",
-                "montant_ttc": f"{row.facturation_ttc:.2f} €" if row.facturation_ttc else "",
-                "montant_paye": f"{row.facturation_paye:.2f} €" if row.facturation_paye else "",
-                "reste_a_payer": f"{row.facturation_restante:.2f} €" if row.facturation_restante else "",
-                "client_nom": row.client_nom or "",
-                "client_prenom": row.client_prenom or "",
-                "client_adresse": row.client_adresse or "",
-                "client_cp": row.client_cp or "",
-                "client_ville": row.client_ville or "",
-                "client_email": row.client_email or "",
-                "client_tel": row.client_tel or "",
-                "bien_adresse": row.bien_adresse or "",
-                "bien_cp": row.bien_cp or "",
-                "bien_ville": row.bien_ville or "",
-                "donneur_ordre": row.donneur_ordre or "",
-                "chemin": row.chemin_dossier or "",
-                "photo": "",  # à compléter dans une étape suivante
+                "date_&_heure": row.date_rdv.strftime("%d/%m/%Y %H h %M") if row.date_rdv else None,
+                "statut_paiement": row.statut_paiement,
+                "assainissement": row.assainissement,
+                "dossier": row.statut_dossier,
+                "commentaires": row.commentaires,
+                "montant_ttc": f"{row.facturation_ttc:.2f} €" if row.facturation_ttc is not None else None,
+                "montant_paye": f"{row.facturation_paye:.2f} €" if row.facturation_paye is not None else None,
+                "reste_a_payer": f"{row.facturation_restante:.2f} €" if row.facturation_restante is not None else None,
+                "client_nom": row.client_nom,
+                "client_prenom": row.client_prenom,
+                "client_adresse": row.client_adresse,
+                "client_cp": row.client_cp,
+                "client_ville": row.client_ville,
+                "client_email": row.client_email,
+                "client_tel": row.client_tel,
+                "bien_adresse": row.bien_adresse,
+                "bien_cp": row.bien_cp,
+                "bien_ville": row.bien_ville,
+                "donneur_ordre": row.donneur_ordre,
+                "chemin": row.chemin_dossier,
+                "photo": None,  # à compléter dans une étape suivante
             }
+
+            for key, value in dossier_data.items():
+                if value in (None, ""):
+                    logger.warning(
+                        "Champ '%s' vide ou None pour le dossier '%s'. Attribution de 'N/A'.",
+                        key,
+                        nom_dossier,
+                    )
+                    dossier_data[key] = "N/A"
 
             conn.close()
             return dossier_data
