@@ -10,6 +10,9 @@ import unicodedata
 import pyodbc
 from datetime import datetime
 
+
+
+
 CONFIG_FILE = "config_suiviclientpro.json"
 MANUAL_STATE_FILE = "manual_states.json"
 
@@ -215,3 +218,56 @@ class MainClientTable(QWidget):
         for i, row in enumerate(rows):
             for j, val in enumerate(row):
                 self.table.setItem(i, j, QTableWidgetItem(val))
+
+
+
+class GmailConfigDialog(QDialog):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Paramétrage Gmail")
+        self.setMinimumWidth(400)
+        layout = QVBoxLayout()
+
+        self.label_input = QLineEdit()
+        self.label_input.setPlaceholderText("Ex : SENT, Envoyés, DDT")
+        layout.addWidget(QLabel("Label Gmail à analyser :"))
+        layout.addWidget(self.label_input)
+
+        self.btn_save = QPushButton("Enregistrer")
+        self.btn_reset_token = QPushButton("Réinitialiser l'autorisation Gmail")
+
+        layout.addWidget(self.btn_save)
+        layout.addWidget(self.btn_reset_token)
+        self.setLayout(layout)
+
+        self.btn_save.clicked.connect(self.save_config)
+        self.btn_reset_token.clicked.connect(self.reset_token)
+
+        self.load_existing_label()
+
+    def load_existing_label(self):
+        try:
+            with open("config_suiviclientpro.json", "r", encoding="utf-8") as f:
+                config = json.load(f)
+                self.label_input.setText(config.get("gmail_label", "SENT"))
+        except Exception:
+            pass
+
+    def save_config(self):
+        try:
+            with open("config_suiviclientpro.json", "r", encoding="utf-8") as f:
+                config = json.load(f)
+            config["gmail_label"] = self.label_input.text().strip()
+            with open("config_suiviclientpro.json", "w", encoding="utf-8") as f:
+                json.dump(config, f, indent=2, ensure_ascii=False)
+            QMessageBox.information(self, "Succès", "Label Gmail enregistré.")
+            self.accept()
+        except Exception as e:
+            QMessageBox.critical(self, "Erreur", f"Impossible de sauvegarder : {e}")
+
+    def reset_token(self):
+        try:
+            os.remove("token.json")
+            QMessageBox.information(self, "Réinitialisé", "Autorisation Gmail supprimée.")
+        except FileNotFoundError:
+            QMessageBox.warning(self, "Info", "Aucun jeton trouvé.")

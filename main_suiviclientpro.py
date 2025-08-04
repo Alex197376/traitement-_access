@@ -9,9 +9,11 @@ from PyQt5.QtWidgets import (
     QHBoxLayout, QLabel, QTableWidget, QTableWidgetItem,
     QHeaderView, QAbstractItemView, QSplitter, QMessageBox, QLineEdit, QComboBox, QFileDialog
 )
-from PyQt5.QtGui import QIcon
+from PyQt5.QtGui import QIcon, QColor, QBrush
 from PyQt5.QtCore import Qt
 from config_window import ConfigWindow
+from scan_ddt_envoyes import telecharger_pieces_jointes
+
 
 
 
@@ -60,6 +62,8 @@ class SuiviClientPro(QMainWindow):
         self.btn_actualiser = QPushButton("🔄 Actualiser")
         self.btn_statistiques = QPushButton("📊 Statistiques")
         self.btn_relances = QPushButton("📧 Relances")
+        self.btn_ddt = QPushButton("📤 DDT envoyés")
+        self.btn_ddt.clicked.connect(self.actualiser_ddt_envoyes)
         self.btn_reset_sort = QPushButton("🔁 Réinitialiser tri")
        
 
@@ -92,6 +96,7 @@ class SuiviClientPro(QMainWindow):
         left_layout.addWidget(self.btn_actualiser)
         left_layout.addWidget(self.btn_statistiques)
         left_layout.addWidget(self.btn_relances)
+        left_layout.addWidget(self.btn_ddt)
         left_layout.addWidget(self.btn_reset_sort)
         left_layout.addStretch()
         left_layout.addLayout(filter_layout)
@@ -100,10 +105,12 @@ class SuiviClientPro(QMainWindow):
         menu_widget.setLayout(left_layout)
 
         self.table = QTableWidget()
-        self.table.setColumnCount(7)
+        self.table.setColumnCount(8)
         self.table.setHorizontalHeaderLabels([
             "Nom du dossier", "Type de mission", "Date & Heure", "Statut paiement",
-            "Assainissement", "Dossier", "Commentaires"])
+            "Assainissement", "Dossier", "Commentaires", "DDT envoyé"
+        ])
+
         self.table.setSortingEnabled(True)
         self.table.horizontalHeader().sectionClicked.connect(self.handle_sorting)
 
@@ -303,6 +310,25 @@ class SuiviClientPro(QMainWindow):
         except Exception as e:
             QMessageBox.critical(self, "Erreur Base Access", str(e))
             return {}
+        
+
+    def verifier_ddt_local(self, nom_dossier):
+        config = self.load_config()
+        base_path = config.get("dossiers_path", "")
+        if not base_path:
+            return False
+
+        # Dossier complet à analyser
+        dossier_path = os.path.join(base_path, nom_dossier)
+        if not os.path.exists(dossier_path):
+            return False
+
+        # Vérifie si un PDF DDT est présent
+        for fichier in os.listdir(dossier_path):
+            if fichier.lower().endswith(".pdf") and any(mot in fichier.lower() for mot in ["dpe", "amiante", "ddt", "rapport"]):
+                return True
+        return False
+
 
 
     def refresh_data(self):
@@ -357,6 +383,16 @@ class SuiviClientPro(QMainWindow):
             self.table.setItem(row, 4, QTableWidgetItem(assainissement))
             self.table.setItem(row, 5, QTableWidgetItem(dossier_statut))
             self.table.setItem(row, 6, QTableWidgetItem(commentaire))
+            ddt_present = self.verifier_ddt_local(dossier["nom"])
+            ddt_item = QTableWidgetItem("Oui" if ddt_present else "Non")
+            ddt_item.setForeground(QBrush(QColor("green" if ddt_present else "red")))
+            self.table.setItem(row, 7, ddt_item)
+           
+            ddt_item = QTableWidgetItem("Non")
+            ddt_item.setForeground(QBrush(QColor("red")))
+            self.table.setItem(row, 7, ddt_item)
+
+
         self.table.blockSignals(False)
 
     def save_manual_states(self, item):
@@ -410,10 +446,47 @@ class SuiviClientPro(QMainWindow):
                     "Erreur",
                     f"Échec de l'écriture dans la base Access : {e}",
                 )
+
+    def actualiser_ddt_envoyes(self):
+        try:
+            fichiers_gmail = telecharger_pieces_jointes()
+        except Exception as e:
+            QMessageBox.critical(self, "Erreur Gmail", f"Erreur lors du scan Gmail : {e}")
+            return
+
+        fichiers_gmail = [f.lower() for f in fichiers_gmail]
+
+        for row in range(self.table.rowCount()):
+            nom_dossier = self.table.item(row, 0).text().lower()
+            ddt_local = self.verifier_ddt_local(nom_dossier)
+
+            # Correspondance approximative entre nom_dossier et fichier Gmail
+            trouve_gmail = any(nom_dossier in f for f in fichiers_gmail)
+
+            if ddt_local or trouve_gmail:
+                statut = "Oui"
+                couleur = "green"
+            else:
+                statut = "Non"
+                couleur = "red"
+
+            ddt_item = QTableWidgetItem(statut)
+            ddt_item.setForeground(QBrush(QColor(couleur)))
+            self.table.setItem(row, 7, ddt_item)
+
+        QMessageBox.information(self, "Scan terminé", "La mise à jour des DDT envoyés est terminée.")
+
+
+
+
     def open_config(self):
         config_dialog = ConfigWindow(self)
         if config_dialog.exec_():
             self.refresh_data()
+        from config_window import GmailConfigDialog
+        gmail_dialog = GmailConfigDialog(self)
+        gmail_dialog.exec_()
+
 
     def handle_sorting(self, column):
         header = self.table.horizontalHeader()
@@ -436,6 +509,8 @@ class SuiviClientPro(QMainWindow):
             fiche = FicheClientWindow(dossier)
             fiche.exec_()
 
+    def actualiser_ddt_envoyes(self):
+        QMessageBox.information(self, "DDT envoyés", "Fonction à venir : scan Gmail + mise à jour DDT.")
 
 
 if __name__ == "__main__":
