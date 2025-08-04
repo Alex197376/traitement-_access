@@ -9,9 +9,11 @@ from PyQt5.QtWidgets import (
     QHBoxLayout, QLabel, QTableWidget, QTableWidgetItem,
     QHeaderView, QAbstractItemView, QSplitter, QMessageBox, QLineEdit, QComboBox, QFileDialog
 )
-from PyQt5.QtGui import QIcon
+from PyQt5.QtGui import QIcon, QColor, QBrush
 from PyQt5.QtCore import Qt
 from config_window import ConfigWindow
+from scan_ddt_envoyes import telecharger_pieces_jointes
+
 
 
 
@@ -60,6 +62,8 @@ class SuiviClientPro(QMainWindow):
         self.btn_actualiser = QPushButton("🔄 Actualiser")
         self.btn_statistiques = QPushButton("📊 Statistiques")
         self.btn_relances = QPushButton("📧 Relances")
+        self.btn_ddt = QPushButton("📤 DDT envoyés")
+        self.btn_ddt.clicked.connect(self.actualiser_ddt_envoyes)
         self.btn_reset_sort = QPushButton("🔁 Réinitialiser tri")
        
 
@@ -92,6 +96,7 @@ class SuiviClientPro(QMainWindow):
         left_layout.addWidget(self.btn_actualiser)
         left_layout.addWidget(self.btn_statistiques)
         left_layout.addWidget(self.btn_relances)
+        left_layout.addWidget(self.btn_ddt)
         left_layout.addWidget(self.btn_reset_sort)
         left_layout.addStretch()
         left_layout.addLayout(filter_layout)
@@ -100,10 +105,12 @@ class SuiviClientPro(QMainWindow):
         menu_widget.setLayout(left_layout)
 
         self.table = QTableWidget()
-        self.table.setColumnCount(7)
+        self.table.setColumnCount(8)
         self.table.setHorizontalHeaderLabels([
             "Nom du dossier", "Type de mission", "Date & Heure", "Statut paiement",
-            "Assainissement", "Dossier", "Commentaires"])
+            "Assainissement", "Dossier", "Commentaires", "DDT envoyé"
+        ])
+
         self.table.setSortingEnabled(True)
         self.table.horizontalHeader().sectionClicked.connect(self.handle_sorting)
 
@@ -251,11 +258,14 @@ class SuiviClientPro(QMainWindow):
             cursor = conn.cursor()
 
             # Requête pour récupérer toutes les données du dossier
-            cursor.execute("""
+            cursor.execute(
+                """
                 SELECT *
-                FROM Dossiers
-                WHERE nom_dossier = ?
-            """, (nom_dossier,))
+                FROM Donnees_Dossiers
+                WHERE Num_dossier = ?
+                """,
+                (nom_dossier,),
+            )
 
             row = cursor.fetchone()
             if not row:
@@ -263,30 +273,35 @@ class SuiviClientPro(QMainWindow):
                 return {}
 
             # Construction du dictionnaire de données
+            date_part = getattr(row, "rdv_date", None)
+            heure_part = getattr(row, "rdv_heure", "")
+            date_str = date_part.strftime("%d/%m/%Y") if isinstance(date_part, datetime) else ""
+            date_heure = f"{date_str} {heure_part}".strip()
+
             dossier_data = {
-                "nom_du_dossier": row.nom_dossier,
-                "type_de_mission": row.type_mission,
-                "date_&_heure": row.date_rdv.strftime("%d/%m/%Y %H h %M") if row.date_rdv else "",
-                "statut_paiement": row.statut_paiement or "",
-                "assainissement": row.assainissement or "",
-                "dossier": row.statut_dossier or "",
-                "commentaires": row.commentaires or "",
-                "montant_ttc": f"{row.facturation_ttc:.2f} €" if row.facturation_ttc else "",
-                "montant_paye": f"{row.facturation_paye:.2f} €" if row.facturation_paye else "",
-                "reste_a_payer": f"{row.facturation_restante:.2f} €" if row.facturation_restante else "",
-                "client_nom": row.client_nom or "",
-                "client_prenom": row.client_prenom or "",
-                "client_adresse": row.client_adresse or "",
-                "client_cp": row.client_cp or "",
-                "client_ville": row.client_ville or "",
-                "client_email": row.client_email or "",
-                "client_tel": row.client_tel or "",
-                "bien_adresse": row.bien_adresse or "",
-                "bien_cp": row.bien_cp or "",
-                "bien_ville": row.bien_ville or "",
-                "donneur_ordre": row.donneur_ordre or "",
-                "chemin": row.chemin_dossier or "",
-                "photo": "",  # à compléter dans une étape suivante
+                "nom_du_dossier": getattr(row, "Num_dossier", ""),
+                "type_de_mission": getattr(row, "type_de_dossier", ""),
+                "date_&_heure": date_heure,
+                "statut_paiement": getattr(row, "dossier_etat_paie", ""),
+                "assainissement": getattr(row, "assainissement", ""),
+                "dossier": getattr(row, "statut_dossier", ""),
+                "commentaires": getattr(row, "commentaires", ""),
+                "montant_ttc": f"{getattr(row, 'facturation_ttc', 0):.2f} €" if getattr(row, 'facturation_ttc', None) else "",
+                "montant_paye": f"{getattr(row, 'facturation_paye', 0):.2f} €" if getattr(row, 'facturation_paye', None) else "",
+                "reste_a_payer": f"{getattr(row, 'facturation_restante', 0):.2f} €" if getattr(row, 'facturation_restante', None) else "",
+                "client_nom": getattr(row, "client_nom", ""),
+                "client_prenom": getattr(row, "client_prenom", ""),
+                "client_adresse": getattr(row, "client_adresse", ""),
+                "client_cp": getattr(row, "client_cp", ""),
+                "client_ville": getattr(row, "client_ville", ""),
+                "client_email": getattr(row, "client_email", ""),
+                "client_tel": getattr(row, "client_tel", ""),
+                "bien_adresse": getattr(row, "bien_adresse", ""),
+                "bien_cp": getattr(row, "bien_cp", ""),
+                "bien_ville": getattr(row, "bien_ville", ""),
+                "donneur_ordre": getattr(row, "donneur_ordre", ""),
+                "chemin": getattr(row, "chemin_dossier", ""),
+                "photo": "",
             }
 
             conn.close()
@@ -295,6 +310,25 @@ class SuiviClientPro(QMainWindow):
         except Exception as e:
             QMessageBox.critical(self, "Erreur Base Access", str(e))
             return {}
+        
+
+    def verifier_ddt_local(self, nom_dossier):
+        config = self.load_config()
+        base_path = config.get("dossiers_path", "")
+        if not base_path:
+            return False
+
+        # Dossier complet à analyser
+        dossier_path = os.path.join(base_path, nom_dossier)
+        if not os.path.exists(dossier_path):
+            return False
+
+        # Vérifie si un PDF DDT est présent
+        for fichier in os.listdir(dossier_path):
+            if fichier.lower().endswith(".pdf") and any(mot in fichier.lower() for mot in ["dpe", "amiante", "ddt", "rapport"]):
+                return True
+        return False
+
 
 
     def refresh_data(self):
@@ -333,6 +367,7 @@ class SuiviClientPro(QMainWindow):
                 reverse=self.sort_order == Qt.DescendingOrder
             )
 
+        self.table.blockSignals(True)
         self.table.setRowCount(len(self.filtered_dossiers))
 
         for row, dossier in enumerate(self.filtered_dossiers):
@@ -348,6 +383,17 @@ class SuiviClientPro(QMainWindow):
             self.table.setItem(row, 4, QTableWidgetItem(assainissement))
             self.table.setItem(row, 5, QTableWidgetItem(dossier_statut))
             self.table.setItem(row, 6, QTableWidgetItem(commentaire))
+            ddt_present = self.verifier_ddt_local(dossier["nom"])
+            ddt_item = QTableWidgetItem("Oui" if ddt_present else "Non")
+            ddt_item.setForeground(QBrush(QColor("green" if ddt_present else "red")))
+            self.table.setItem(row, 7, ddt_item)
+           
+            ddt_item = QTableWidgetItem("Non")
+            ddt_item.setForeground(QBrush(QColor("red")))
+            self.table.setItem(row, 7, ddt_item)
+
+
+        self.table.blockSignals(False)
 
     def save_manual_states(self, item):
         row = item.row()
@@ -366,12 +412,81 @@ class SuiviClientPro(QMainWindow):
             with open(MANUAL_STATES_PATH, 'w', encoding='utf-8') as f:
                 json.dump(self.manual_states, f, indent=2, ensure_ascii=False)
 
+            # Mise à jour dans la base Access
+            config = self.load_config()
+            db_path = config.get("access_path", "")
+            if not os.path.exists(db_path):
+                QMessageBox.warning(self, "Erreur", f"Base Access introuvable : {db_path}")
+                return
+
+            conn_str = (
+                r"DRIVER={Microsoft Access Driver (*.mdb, *.accdb)};"
+                f"DBQ={db_path};"
+            )
+            try:
+                with pyodbc.connect(conn_str) as conn:
+                    cursor = conn.cursor()
+                    cursor.execute(
+                        """
+                        UPDATE Donnees_Dossiers
+                        SET assainissement = ?, statut_dossier = ?, commentaires = ?
+                        WHERE Num_dossier = ?
+                        """,
+                        (
+                            self.manual_states[dossier].get("assainissement", ""),
+                            self.manual_states[dossier].get("dossier", ""),
+                            self.manual_states[dossier].get("commentaire", ""),
+                            dossier,
+                        ),
+                    )
+                    conn.commit()
+            except Exception as e:
+                QMessageBox.warning(
+                    self,
+                    "Erreur",
+                    f"Échec de l'écriture dans la base Access : {e}",
+                )
+
+    def actualiser_ddt_envoyes(self):
+        try:
+            fichiers_gmail = telecharger_pieces_jointes()
+        except Exception as e:
+            QMessageBox.critical(self, "Erreur Gmail", f"Erreur lors du scan Gmail : {e}")
+            return
+
+        fichiers_gmail = [f.lower() for f in fichiers_gmail]
+
+        for row in range(self.table.rowCount()):
+            nom_dossier = self.table.item(row, 0).text().lower()
+            ddt_local = self.verifier_ddt_local(nom_dossier)
+
+            # Correspondance approximative entre nom_dossier et fichier Gmail
+            trouve_gmail = any(nom_dossier in f for f in fichiers_gmail)
+
+            if ddt_local or trouve_gmail:
+                statut = "Oui"
+                couleur = "green"
+            else:
+                statut = "Non"
+                couleur = "red"
+
+            ddt_item = QTableWidgetItem(statut)
+            ddt_item.setForeground(QBrush(QColor(couleur)))
+            self.table.setItem(row, 7, ddt_item)
+
+        QMessageBox.information(self, "Scan terminé", "La mise à jour des DDT envoyés est terminée.")
+
+
 
 
     def open_config(self):
         config_dialog = ConfigWindow(self)
         if config_dialog.exec_():
             self.refresh_data()
+        from config_window import GmailConfigDialog
+        gmail_dialog = GmailConfigDialog(self)
+        gmail_dialog.exec_()
+
 
     def handle_sorting(self, column):
         header = self.table.horizontalHeader()
@@ -394,6 +509,8 @@ class SuiviClientPro(QMainWindow):
             fiche = FicheClientWindow(dossier)
             fiche.exec_()
 
+    def actualiser_ddt_envoyes(self):
+        QMessageBox.information(self, "DDT envoyés", "Fonction à venir : scan Gmail + mise à jour DDT.")
 
 
 if __name__ == "__main__":

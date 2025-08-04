@@ -12,6 +12,11 @@ from PyQt5.QtGui import QIcon, QPixmap
 from PyQt5.QtCore import Qt
 from config_window import ConfigWindow
 
+
+
+
+
+
 CONFIG_PATH = "config_suiviclientpro.json"
 MANUAL_STATES_PATH = "manual_states.json"
 
