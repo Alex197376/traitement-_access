@@ -2,7 +2,6 @@ from PyQt5.QtWidgets import (
     QWidget, QLabel, QPushButton, QLineEdit, QFileDialog,
     QVBoxLayout, QHBoxLayout, QDialog, QMessageBox, QTableWidget, QTableWidgetItem, QHeaderView
 )
-from PyQt5.QtCore import Qt
 import json
 import os
 import re

@@ -6,7 +6,8 @@ from datetime import datetime
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QWidget, QPushButton, QVBoxLayout,
     QHBoxLayout, QLabel, QTableWidget, QTableWidgetItem,
-    QHeaderView, QAbstractItemView, QSplitter, QMessageBox, QLineEdit, QComboBox, QFileDialog, QDialog, QTextEdit, QTabWidget, QGroupBox, QFormLayout
+    QHeaderView, QAbstractItemView, QSplitter, QMessageBox, QLineEdit,
+    QComboBox, QDialog, QTabWidget, QGroupBox, QFormLayout
 )
 from PyQt5.QtGui import QIcon, QPixmap
 from PyQt5.QtCore import Qt
@@ -246,7 +247,7 @@ class SuiviClientPro(QMainWindow):
                         elif isinstance(raw_date, int):
                             try:
                                 date_str = datetime.strptime(str(raw_date), "%Y%m%d").strftime("%d/%m/%Y")
-                            except:
+                            except ValueError:
                                 date_str = str(raw_date)
                         else:
                             date_str = ""

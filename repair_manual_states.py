@@ -1,5 +1,4 @@
 import json
-import os
 
 path_in = "manual_states.json"
 path_out = "manual_states_repair.json"
@@ -18,7 +17,7 @@ for line in lines:
         # test si la ligne est un JSON valide (encapsulée comme un objet)
         json.loads("{" + line.strip().strip(',') + "}")
         cleaned_lines.append(line.strip().strip(','))
-    except:
+    except json.JSONDecodeError:
         continue
 
 # Réécriture dans un nouveau fichier
