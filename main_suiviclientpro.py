@@ -20,6 +20,14 @@ from scan_ddt_envoyes import telecharger_pieces_jointes
 CONFIG_PATH = "config_suiviclientpro.json"
 MANUAL_STATES_PATH = "manual_states.json"
 
+def nettoyer_nom_dossier(nom: str) -> str:
+    """Nettoie le nom du dossier récupéré depuis la table.
+
+    Cette fonction supprime les espaces superflus afin d'éviter les
+    erreurs lors des recherches dans la base de données.
+    """
+    return nom.strip()
+
 def load_config():
     if os.path.exists(CONFIG_PATH):
         with open(CONFIG_PATH, "r", encoding="utf-8") as f:
@@ -34,9 +42,6 @@ def validate_json_file(path):
     except json.JSONDecodeError as e:
         QMessageBox.critical(None, "Erreur JSON", f"Erreur dans le fichier JSON :\n{e}")
         return False
-    
-CONFIG_PATH = "config_suiviclientpro.json"
-MANUAL_STATES_PATH = "manual_states.json"
 
 class SuiviClientPro(QMainWindow):
     def __init__(self):
@@ -241,7 +246,12 @@ class SuiviClientPro(QMainWindow):
                 fiche.exec_()
 
     def get_dossier_data_from_row(self, row):
-        nom_dossier = self.table.item(row, 0).text()
+        item = self.table.item(row, 0)
+        if item is None:
+            QMessageBox.warning(self, "Erreur", "Impossible de déterminer le nom du dossier sélectionné.")
+            return {}
+
+        nom_dossier = nettoyer_nom_dossier(item.text())
 
         config = self.load_config()
         chemin_base = config.get("access_path")
